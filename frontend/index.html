@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- This section loads page settings, CSS and Vue.js. -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circlo | Community Sharing</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+<div id="app">
+
+    <!-- This section displays the main navigation. -->
+    <header>
+        <h2 class="logo">Circlo<span>.</span></h2>
+
+        <nav v-if="user" class="main-nav">
+            <button @click="goTo('home')">Home</button>
+            <button @click="goTo('share')">Share Item</button>
+            <button @click="goTo('requests')">My Requests</button>
+            <button @click="goTo('borrowed')">Borrowed Items</button>
+            <button @click="goTo('manage')">Manage Requests</button>
+            <button @click="goTo('ratings')">Ratings</button>
+            <button @click="logout">Logout</button>
+        </nav>
+
+        <nav v-else class="main-nav">
+            <a href="#auth" @click="authMode='login'">Login</a>
+            <a href="#auth" @click="authMode='register'">Register</a>
+        </nav>
+    </header>
+
+    <!-- This section displays login and registration forms. -->
+    <section v-if="!user" class="auth-section" id="auth">
+        <div class="auth-info">
+            <p class="tagline">YOUR COMMUNITY MARKETPLACE</p>
+            <h1>Share more.<br>Waste less.</h1>
+            <p>Borrow what you need. Share what you have. Build a better community together.</p>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button @click="authMode='login'"
+                    :class="{active:authMode==='login'}">Login</button>
+                <button @click="authMode='register'"
+                    :class="{active:authMode==='register'}">Register</button>
+            </div>
+
+            <h2>{{ authMode==='register'?'Create your account':'Welcome back!' }}</h2>
+            <p>{{ authMode==='register'?'Join your local sharing community.':'Login to continue sharing.' }}</p>
+
+            <form @submit.prevent="authMode==='register'?register():login()">
+                <label v-if="authMode==='register'">Full Name</label>
+                <input v-if="authMode==='register'"
+                    v-model.trim="auth.name"
+                    placeholder="Enter your name"
+                    required>
+
+                <label>Email Address</label>
+                <input v-model.trim="auth.email"
+                    type="email"
+                    placeholder="you@example.com"
+                    required>
+
+                <label>Password</label>
+                <input v-model="auth.password"
+                    type="password"
+                    placeholder="Minimum 6 characters"
+                    minlength="6"
+                    required>
+
+                <button class="primary-btn" type="submit">
+                    {{ authMode==='register'?'Create Account':'Login to Circlo' }}
+                </button>
+            </form>
+
+            <p class="message">{{ message }}</p>
+        </div>
+    </section>
+
+    <!-- This section contains the pages for logged-in users. -->
+    <main v-else>
+
+        <!-- This section displays the home dashboard. -->
+        <section class="hero" v-if="currentPage==='home'">
+            <p class="tagline">WELCOME TO YOUR COMMUNITY</p>
+            <h1>Hello, {{ user.name }}!</h1>
+            <p>Find useful items or share something with your neighbours.</p>
+            <p class="user-id">Your Member ID: #{{ user.id }}</p>
+
+            <div class="dashboard-actions">
+                <button class="primary-btn" @click="goTo('share')">+ Share an Item</button>
+                <button @click="goTo('borrowed')">View Borrowed Items</button>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <h3>{{ items.length }}</h3>
+                    <p>Items Found</p>
+                </article>
+                <article class="stat-card">
+                    <h3>{{ requests.filter(r=>r.status==='Pending').length }}</h3>
+                    <p>Pending Requests</p>
+                </article>
+                <article class="stat-card">
+                    <h3>{{ borrowedItems.length }}</h3>
+                    <p>Borrowed Items</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section searches and filters community items. -->
+        <section class="filters" v-if="currentPage==='home'">
+            <input v-model="search" placeholder="Search items..." @input="loadItems">
+
+            <select v-model="category" @change="loadItems">
+                <option value="">All Categories</option>
+                <option>Books</option>
+                <option>Electronics</option>
+                <option>Sports</option>
+                <option>Home</option>
+                <option>Other</option>
+            </select>
+
+            <select v-model="status" @change="loadItems">
+                <option value="">All Statuses</option>
+                <option>Available</option>
+                <option>Borrowed</option>
+            </select>
+
+            <button @click="loadItems">Search</button>
+        </section>
+
+        <!-- This section displays community items and their owners. -->
+        <section class="items" v-if="currentPage==='home'">
+            <div class="section-heading">
+                <div>
+                    <p class="tagline">DISCOVER AND SHARE</p>
+                    <h2>Explore Community Items</h2>
+                </div>
+                <span>{{ filteredItems.length }} items</span>
+            </div>
+
+            <p class="message">{{ message }}</p>
+            <p v-if="loading">Loading items...</p>
+            <p v-else-if="filteredItems.length===0">No items found. Try another search.</p>
+
+            <div class="item-grid">
+                <article class="item-card" v-for="item in filteredItems" :key="item.id">
+                    <span class="category">{{ item.category }}</span>
+                    <h3>{{ item.name }}</h3>
+                    <p>{{ item.description || 'Ready to be shared with the community.' }}</p>
+                    <p>Owner: <strong>{{ item.owner_name || 'Owner name unavailable' }}</strong></p>
+
+                    <span :class="item.status==='Available'?'available':'borrowed'">
+                        {{ item.status }}
+                    </span>
+
+                    <button
+                        v-if="item.status==='Available' && Number(item.user_id)!==Number(user.id)"
+                        @click="borrowItem(item.id)">
+                        Request to Borrow
+                    </button>
+
+                    <p v-else-if="Number(item.user_id)===Number(user.id)">Your item</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section lets users publish a new item. -->
+        <section class="add-section" v-if="currentPage==='share'">
+            <p class="tagline">GIVE SOMETHING BACK</p>
+            <h2>Share an Item</h2>
+            <p>List something useful that your community can borrow.</p>
+
+            <form @submit.prevent="addItem">
+                <label>Item Name</label>
+                <input v-model.trim="newItem.name" placeholder="Enter item name" required>
+
+                <label>Category</label>
+                <select v-model="newItem.category" required>
+                    <option value="">Choose category</option>
+                    <option>Books</option>
+                    <option>Electronics</option>
+                    <option>Sports</option>
+                    <option>Home</option>
+                    <option>Other</option>
+                </select>
+
+                <label>Description</label>
+                <textarea v-model.trim="newItem.description" placeholder="Describe your item"></textarea>
+
+                <button class="primary-btn" type="submit">Publish Item</button>
+            </form>
+
+            <p class="message">{{ message }}</p>
+        </section>
+
+        <!-- This section displays the user's borrow requests. -->
+        <section class="items" v-if="currentPage==='requests'">
+            <p class="tagline">TRACK YOUR REQUESTS</p>
+            <h2>My Borrow Requests</h2>
+            <button @click="loadRequests">Refresh Requests</button>
+
+            <p v-if="requests.length===0">You have not sent any borrow requests yet.</p>
+
+            <div class="item-grid">
+                <article class="item-card" v-for="request in requests" :key="request.id">
+                    <h3>{{ request.item_name }}</h3>
+                    <p>Owner: <strong>{{ request.owner_name || 'Owner name unavailable' }}</strong></p>
+
+                    <p>Status:
+                        <span :class="request.status==='Approved'?'available':request.status==='Rejected'?'borrowed':'category'">
+                            {{ request.status }}
+                        </span>
+                    </p>
+
+                    <button v-if="request.status==='Approved'" @click="returnItem(request.id)">
+                        Return Item
+                    </button>
+
+                    <button v-if="request.status==='Returned'" @click="startRating(request.item_id)">
+                        Rate Item
+                    </button>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section displays currently borrowed items. -->
+        <section class="items" v-if="currentPage==='borrowed'">
+            <p class="tagline">YOUR CURRENT BORROWS</p>
+            <h2>Borrowed Items</h2>
+
+            <p v-if="borrowedItems.length===0">No borrowed items yet. Explore the community to request an item.</p>
+
+            <div class="item-grid">
+                <article class="item-card" v-for="request in borrowedItems" :key="request.id">
+                    <span class="available">Approved</span>
+                    <h3>{{ request.item_name }}</h3>
+                    <p>Owner: <strong>{{ request.owner_name || 'Owner name unavailable' }}</strong></p>
+                    <button @click="returnItem(request.id)">Return Item</button>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section lets owners manage incoming requests. -->
+        <section class="items" v-if="currentPage==='manage'">
+            <p class="tagline">COMMUNITY SHARING</p>
+            <h2>Manage Requests</h2>
+            <button @click="loadRequests">Refresh Requests</button>
+
+            <p v-if="ownerRequests.length===0">No one has requested your items yet.</p>
+
+            <div class="item-grid">
+                <article class="item-card" v-for="request in ownerRequests" :key="request.id">
+                    <h3>{{ request.item_name }}</h3>
+                    <p>Requested by: <strong>{{ request.borrower_name || 'Borrower name unavailable' }}</strong></p>
+
+                    <p>Status:
+                        <span :class="request.status==='Approved'?'available':request.status==='Rejected'?'borrowed':'category'">
+                            {{ request.status }}
+                        </span>
+                    </p>
+
+                    <div v-if="request.status==='Pending'">
+                        <button @click="updateRequest(request.id,'Approved')">Approve</button>
+                        <button @click="updateRequest(request.id,'Rejected')">Reject</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section lets users rate items they borrowed and returned. -->
+        <section class="items" v-if="currentPage==='ratings'">
+            <p class="tagline">COMMUNITY FEEDBACK</p>
+            <h2>Ratings & Reviews</h2>
+            <p>Rate the owner of an item you borrowed.</p>
+
+            <form class="add-section" @submit.prevent="submitRating">
+                <label>Select Item</label>
+                <select v-model.number="ratingForm.item_id" required>
+                    <option :value="0" disabled>Select a item</option>
+                    <option v-for="item in rateableItems" :key="item.id" :value="item.item_id">
+                        {{ item.item_name }}
+                    </option>
+                </select>
+
+                <p v-if="rateableItems.length===0">
+                    No returned borrowed items available for rating.
+                </p>
+
+                <label>Your Rating</label>
+                <select v-model.number="ratingForm.rating" required>
+                    <option :value="0" disabled>Select a rating</option>
+                    <option :value="1">1 - Poor</option>
+                    <option :value="2">2 - Fair</option>
+                    <option :value="3">3 - Good</option>
+                    <option :value="4">4 - Very Good</option>
+                    <option :value="5">5 - Excellent</option>
+                </select>
+
+                <label>Feedback (Optional)</label>
+                <textarea v-model.trim="ratingForm.comment"
+                    placeholder="Write your experience with this item owner"></textarea>
+
+                <button class="primary-btn" type="submit" :disabled="rateableItems.length===0">
+                    Submit Rating
+                </button>
+            </form>
+
+            <div class="item-grid">
+                <article class="item-card" v-for="rating in allRatings" :key="rating.id">
+                    <h3>{{ rating.reviewed_name }}</h3>
+                    <p>Rated by: {{ rating.reviewer_name }}</p>
+                    <p>
+                        <span class="rating-stars">
+                            {{ '★'.repeat(Number(rating.rating)) }}{{ '☆'.repeat(5-Number(rating.rating)) }}
+                        </span>
+                        ({{ rating.rating }}/5)
+                    </p>
+                    <p>{{ rating.comment || 'No written feedback.' }}</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- This section displays application messages. -->
+        <p class="message" style="text-align:center;padding:0 20px;">{{ message }}</p>
+    </main>
+
+    <!-- This section displays the website footer. -->
+    <footer>
+        <p>© 2026 Circlo | Share resources, build connections.</p>
+    </footer>
+</div>
+
+<!-- This section loads the Vue application logic. -->
+<script src="app.js"></script>
+</body>
+</html>
