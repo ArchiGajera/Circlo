@@ -1,0 +1,329 @@
+
+/* This section defines the website's main colors and defaults. */
+:root{
+    --primary:#16794b;
+    --primary-dark:#105d39;
+    --dark:#182433;
+    --slate:#34495e;
+    --light:#eef2f7;
+    --white:#ffffff;
+    --muted:#687586;
+    --border:#dce3eb;
+    --success-bg:#e4f7ec;
+    --danger:#c0392b;
+    --shadow:0 8px 24px rgba(24,36,51,0.07);
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--light);
+    color:var(--dark);
+    line-height:1.6;
+}
+
+button,input,select,textarea{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+    transition:background 0.2s,transform 0.2s;
+}
+
+button:hover{
+    transform:translateY(-1px);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+    outline:2px solid var(--primary);
+    outline-offset:2px;
+}
+
+/* This section styles the main header and navigation. */
+header{
+    background:var(--white);
+    min-height:76px;
+    padding:14px 5%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+    box-shadow:0 2px 12px rgba(24,36,51,0.05);
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+
+.logo{
+    font-size:29px;
+    color:var(--dark);
+    letter-spacing:-1px;
+}
+
+.logo span{
+    color:var(--primary);
+}
+
+.main-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.main-nav button,
+.main-nav a{
+    border:0;
+    background:transparent;
+    color:var(--slate);
+    text-decoration:none;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:14px;
+}
+
+.main-nav button:hover,
+.main-nav a:hover{
+    background:var(--success-bg);
+    color:var(--primary);
+}
+
+.main-nav button:last-child{
+    background:var(--dark);
+    color:var(--white);
+}
+
+/* This section styles the login and registration layout. */
+.auth-section{
+    min-height:calc(100vh - 150px);
+    padding:60px 8%;
+    display:grid;
+    grid-template-columns:1fr 440px;
+    align-items:center;
+    gap:60px;
+    background:linear-gradient(135deg,#e7f5ec,#eef2f7 65%);
+}
+
+.auth-info h1{
+    font-size:clamp(42px,5vw,66px);
+    line-height:1.1;
+    margin:16px 0;
+    letter-spacing:-2px;
+}
+
+.auth-info>p:last-child{
+    max-width:480px;
+    color:var(--muted);
+    font-size:17px;
+}
+
+.tagline{
+    color:var(--primary);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+}
+
+.auth-card{
+    background:var(--white);
+    padding:32px;
+    border-radius:18px;
+    box-shadow:var(--shadow);
+}
+
+.auth-card h2{
+    margin:20px 0 4px;
+}
+
+.auth-card>p{
+    color:var(--muted);
+    margin-bottom:18px;
+}
+
+.auth-tabs{
+    display:flex;
+    gap:8px;
+    background:var(--light);
+    padding:5px;
+    border-radius:10px;
+}
+
+.auth-tabs button{
+    flex:1;
+    padding:10px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:var(--slate);
+}
+
+.auth-tabs button.active{
+    background:var(--white);
+    color:var(--primary);
+    box-shadow:0 2px 6px rgba(24,36,51,0.08);
+}
+
+/* This section styles form labels and input fields. */
+label{
+    display:block;
+    margin:14px 0 6px;
+    font-size:14px;
+    font-weight:600;
+}
+
+input,select,textarea{
+    width:100%;
+    min-width:0;
+    padding:12px 13px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--white);
+    color:var(--dark);
+}
+
+input::placeholder,
+textarea::placeholder{
+    color:#929dab;
+}
+
+textarea{
+    min-height:110px;
+    resize:vertical;
+}
+
+form .primary-btn{
+    width:100%;
+    margin-top:20px;
+}
+
+/* This section styles primary and secondary buttons. */
+.primary-btn,
+button.primary-btn{
+    border:0;
+    border-radius:9px;
+    padding:12px 18px;
+    background:var(--primary);
+    color:var(--white);
+    font-weight:700;
+}
+
+.primary-btn:hover{
+    background:var(--primary-dark);
+}
+
+button:not(.primary-btn):not(.active){
+    border-radius:9px;
+}
+
+.message{
+    margin-top:14px;
+    color:var(--primary);
+    font-size:14px;
+    overflow-wrap:anywhere;
+}
+
+/* This section styles the logged-in dashboard hero. */
+main{
+    min-height:calc(100vh - 150px);
+    padding-bottom:45px;
+}
+
+.hero{
+    padding:48px 6% 36px;
+    background:linear-gradient(120deg,#e4f5e9,#f7fafc);
+}
+
+.hero h1{
+    margin:8px 0;
+    font-size:clamp(30px,4vw,44px);
+    letter-spacing:-1px;
+}
+
+.hero>p:not(.tagline){
+    color:var(--muted);
+}
+
+.user-id{
+    display:inline-block;
+    margin-top:15px;
+    padding:7px 12px;
+    background:var(--white);
+    color:var(--primary)!important;
+    border-radius:8px;
+    font-weight:700;
+}
+
+.dashboard-actions{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:20px;
+}
+
+.dashboard-actions>button:not(.primary-btn){
+    padding:12px 18px;
+    border:1px solid var(--border);
+    background:var(--white);
+    color:var(--dark);
+}
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:18px;
+    margin-top:30px;
+    max-width:850px;
+}
+
+.stat-card{
+    background:var(--white);
+    padding:20px;
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:0 4px 15px rgba(24,36,51,0.04);
+}
+
+.stat-card h3{
+    color:var(--primary);
+    font-size:30px;
+}
+
+.stat-card p{
+    color:var(--muted);
+    font-size:14px;
+}
+
+/* This section styles marketplace search and filters. */
+.filters{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr auto;
+    gap:12px;
+    margin:28px 6% 10px;
+    padding:18px;
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:14px;
+}
+
+.filters button{
+    border:0;
+    background:var(--dark);
+    color:var(--white);
+    padding:10px 20px;
+}
