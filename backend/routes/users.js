@@ -43,7 +43,14 @@ router.post('/register',async(req,res)=>{
             }
         });
     }catch(err){
-        res.status(500).json({message:'Registration failed'});
+        console.error('Registration error:', err);
+        if(err.code==='ER_DUP_ENTRY'){
+            return res.status(409).json({message:'Email already registered'});
+        }
+        if(err.code==='ECONNREFUSED'||err.code==='PROTOCOL_CONNECTION_LOST'){
+            return res.status(503).json({message:'Database is unavailable. Please check that MySQL is running.'});
+        }
+        res.status(500).json({message:'Registration failed: '+(err.message||'Server error')});
     }
 });
 
@@ -81,6 +88,10 @@ router.post('/login',async(req,res)=>{
             }
         });
     }catch(err){
+        console.error('Login error:', err);
+        if(err.code==='ECONNREFUSED'||err.code==='PROTOCOL_CONNECTION_LOST'){
+            return res.status(503).json({message:'Database is unavailable. Please check that MySQL is running.'});
+        }
         res.status(500).json({message:'Login failed'});
     }
 });
@@ -93,6 +104,7 @@ router.get('/',async(req,res)=>{
         );
         res.json(users);
     }catch(err){
+        console.error('Fetch users error:', err);
         res.status(500).json({message:'Could not fetch users'});
     }
 });

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS borrow_requests (
     borrower_id INT NOT NULL,
     status ENUM('Pending', 'Approved', 'Rejected', 'Returned')
         DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (item_id) REFERENCES items(id)
         ON DELETE CASCADE,
     FOREIGN KEY (borrower_id) REFERENCES users(id)
@@ -41,10 +42,13 @@ CREATE TABLE IF NOT EXISTS ratings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     reviewer_id INT NOT NULL,
     user_id INT NOT NULL,
+    item_id INT,
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment VARCHAR(255),
     FOREIGN KEY (reviewer_id) REFERENCES users(id)
         ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES items(id)
+        ON DELETE SET NULL
 );

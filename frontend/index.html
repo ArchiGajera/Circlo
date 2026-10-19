@@ -312,8 +312,12 @@
 
             <div class="item-grid">
                 <article class="item-card" v-for="rating in allRatings" :key="rating.id">
-                    <h3>{{ rating.reviewed_name }}</h3>
-                    <p>Rated by: {{ rating.reviewer_name }}</p>
+                    <div style="width:100%; display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <h3>{{ rating.reviewed_name }}</h3>
+                        <span class="category" v-if="rating.item_name">{{ rating.item_name }}</span>
+                    </div>
+                    <p>Item: <strong>{{ rating.item_name || 'Item unavailable' }}</strong></p>
+                    <p>Rated by: <strong>{{ rating.reviewer_name }}</strong></p>
                     <p>
                         <span class="rating-stars">
                             {{ '★'.repeat(Number(rating.rating)) }}{{ '☆'.repeat(5-Number(rating.rating)) }}

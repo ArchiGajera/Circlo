@@ -5,7 +5,7 @@ USE circlo;
 -- This section creates demo accounts for sample item owners.
 INSERT INTO users (name,email,password)
 VALUES
-('Demo User','demo@circlo.com','demo123'),
+('circlo_owner','demo@circlo.com','demo123'),
 ('Community Member','member@circlo.com','member123')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 

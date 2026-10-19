@@ -299,6 +299,7 @@ const app=Vue.createApp({
                     body:JSON.stringify({
                         reviewer_id:this.user.id,
                         user_id:item.owner_id,
+                        item_id:item.item_id,
                         rating:this.ratingForm.rating,
                         comment:this.ratingForm.comment
                     })
