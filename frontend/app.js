@@ -1,5 +1,5 @@
 
-const API='http://localhost:5000/api';
+const API='./api';
 
 // This section initializes the Vue application.
 const app=Vue.createApp({

@@ -97,7 +97,5 @@ async function autoApproveRequests(){
 autoApproveRequests();
 setInterval(autoApproveRequests,30000);
 
-/* This section starts the complete application. */
-app.listen(5000,()=>{
-    console.log('Circlo is running at http://localhost:5000');
-});
+
+module.exports=app;
