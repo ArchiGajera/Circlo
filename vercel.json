@@ -10,19 +10,14 @@
       "use": "@vercel/static"
     }
   ],
-  "redirects": [
-  {
-    "source": "/index.html",
-    "destination": "/",
-    "permanent": true
-  },
-  {
-    "source": "/index.php",
-    "destination": "/",
-    "permanent": true
-  }
-  ],
   "routes": [
+    {
+      "src": "^/index\\.html$",
+      "status": 308,
+      "headers": {
+        "Location": "/"
+      }
+    },
     {
       "src": "/api/(.*)",
       "dest": "/backend/server.js"
