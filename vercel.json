@@ -1,4 +1,3 @@
-
 {
   "version": 2,
   "builds": [
@@ -9,6 +8,13 @@
     {
       "src": "frontend/**",
       "use": "@vercel/static"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
     }
   ],
   "routes": [
