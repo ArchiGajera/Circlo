@@ -54,13 +54,17 @@ router.post('/',async(req,res)=>{
         }
 
         // This section saves the submitted rating and feedback with item.
-        await db.execute(
+        const [result]=await db.execute(
             `INSERT INTO ratings (reviewer_id,user_id,item_id,rating,comment)
              VALUES (?,?,?,?,?)`,
             [reviewer_id,user_id,item_id||null,Number(rating),comment.trim()]
         );
 
-        res.status(201).json({message:'Rating submitted successfully!'});
+        res.status(201).json({
+            message:'Rating submitted successfully!',
+            id:result.insertId,
+            ratingId:result.insertId
+        });
     }catch(err){
         console.error('Submit rating error:',err.message);
         res.status(500).json({message:'Could not submit rating'});

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS items (
     category VARCHAR(50) NOT NULL,
     description TEXT,
     status ENUM('Available', 'Borrowed') DEFAULT 'Available',
+    image_url TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE
 );
@@ -31,6 +32,8 @@ CREATE TABLE IF NOT EXISTS borrow_requests (
     status ENUM('Pending', 'Approved', 'Rejected', 'Returned')
         DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_at DATETIME DEFAULT NULL,
+    due_at DATETIME DEFAULT NULL,
     FOREIGN KEY (item_id) REFERENCES items(id)
         ON DELETE CASCADE,
     FOREIGN KEY (borrower_id) REFERENCES users(id)
@@ -51,4 +54,18 @@ CREATE TABLE IF NOT EXISTS ratings (
         ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
         ON DELETE SET NULL
+);
+
+-- This table stores in-app notifications (e.g., overdue alerts).
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    request_id INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_request_type (user_id, request_id, type),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (request_id) REFERENCES borrow_requests(id) ON DELETE CASCADE
 );

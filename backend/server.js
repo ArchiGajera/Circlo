@@ -1,4 +1,3 @@
-
 /* This section imports the required packages. */
 const express=require('express');
 const cors=require('cors');
@@ -10,24 +9,38 @@ const users=require('./routes/users');
 const items=require('./routes/items');
 const requests=require('./routes/requests');
 const ratings=require('./routes/ratings');
+const {router:notifications,checkAndCreateOverdueNotifications}=require('./routes/notifications');
+
+const DEFAULT_BORROW_DAYS = parseInt(process.env.DEFAULT_BORROW_DAYS || '7', 10);
 
 /* This section initializes the Express application. */
 const app=express();
 app.use(cors());
 app.use(express.json());
 
-// This section serves the frontend files.
+// This section serves the frontend files and uploaded item images.
 app.use(express.static(path.join(__dirname,'../frontend')));
+app.use('/uploads',express.static(path.join(__dirname,'uploads')));
 
 /* This section connects the API routes. */
 app.use('/api/users',users);
 app.use('/api/items',items);
 app.use('/api/requests',requests);
 app.use('/api/ratings',ratings);
+app.use('/api/notifications',notifications);
 
-/* This section checks whether the server is running. */
+/* This section provides health and Vercel cron endpoints. */
 app.get('/api/health',(req,res)=>{
     res.json({message:'Circlo server is running!'});
+});
+
+app.get('/api/cron/check-overdue',async(req,res)=>{
+    try{
+        const count=await checkAndCreateOverdueNotifications(db);
+        res.json({status:'ok',overdueCount:count});
+    }catch(err){
+        res.status(500).json({status:'error',message:err.message});
+    }
 });
 
 /* This section automatically approves eligible pending requests. */
@@ -75,8 +88,10 @@ async function autoApproveRequests(){
                     );
 
                     await connection.execute(
-                        "UPDATE borrow_requests SET status='Approved' WHERE id=?",
-                        [request.id]
+                        `UPDATE borrow_requests
+                         SET status='Approved', approved_at=NOW(), due_at=DATE_ADD(NOW(), INTERVAL ? DAY)
+                         WHERE id=?`,
+                        [DEFAULT_BORROW_DAYS, request.id]
                     );
                 }
 
@@ -93,9 +108,17 @@ async function autoApproveRequests(){
     }
 }
 
+/* This section runs background maintenance: auto-approval and overdue notifications. */
+function runPeriodicTasks(){
+    autoApproveRequests();
+    checkAndCreateOverdueNotifications(db);
+}
+
+runPeriodicTasks();
+setInterval(runPeriodicTasks,30000);
+
 /* This section checks pending requests every 30 seconds. */
 autoApproveRequests();
 setInterval(autoApproveRequests,30000);
-
 
 module.exports=app;

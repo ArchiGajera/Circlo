@@ -1,8 +1,12 @@
 
-// This section imports Express and the database connection.
+// This section imports Express, the database connection and overdue notifications checker.
 const express=require('express');
 const router=express.Router();
 const db=require('../db');
+const {checkAndCreateOverdueNotifications}=require('./notifications');
+
+// Configurable default borrowing period in days (defaults to 7 days)
+const DEFAULT_BORROW_DAYS = parseInt(process.env.DEFAULT_BORROW_DAYS || '7', 10);
 
 // This section creates a borrow request.
 router.post('/',async(req,res)=>{
@@ -69,9 +73,12 @@ router.post('/',async(req,res)=>{
     }
 });
 
-// This section returns requests with item, owner and borrower names.
+// This section returns requests with item, owner and borrower names, due date, and overdue status.
 router.get('/',async(req,res)=>{
     try{
+        // Recheck overdue requests to keep notifications synchronized
+        await checkAndCreateOverdueNotifications(db);
+
         const [requests]=await db.execute(`
             SELECT
                 br.id,
@@ -79,7 +86,14 @@ router.get('/',async(req,res)=>{
                 br.borrower_id,
                 br.status,
                 br.created_at,
+                br.approved_at,
+                br.due_at,
+                CASE
+                    WHEN br.status = 'Approved' AND br.due_at IS NOT NULL AND br.due_at < NOW() THEN 1
+                    ELSE 0
+                END AS is_overdue,
                 i.name AS item_name,
+                i.image_url,
                 i.user_id AS owner_id,
                 i.status AS item_status,
                 owner.name AS owner_name,
@@ -152,12 +166,21 @@ router.put('/:id',async(req,res)=>{
                 'UPDATE items SET status=? WHERE id=?',
                 ['Borrowed',rows[0].item_id]
             );
-        }
 
-        await connection.execute(
-            'UPDATE borrow_requests SET status=? WHERE id=?',
-            [status,req.params.id]
-        );
+            // Set approved timestamp and due date transactionally
+            await connection.execute(
+                `UPDATE borrow_requests
+                 SET status='Approved', approved_at=NOW(), due_at=DATE_ADD(NOW(), INTERVAL ? DAY)
+                 WHERE id=?`,
+                [DEFAULT_BORROW_DAYS, req.params.id]
+            );
+        } else {
+            // Rejected requests do not receive an approval or return deadline
+            await connection.execute(
+                'UPDATE borrow_requests SET status=? WHERE id=?',
+                [status,req.params.id]
+            );
+        }
 
         await connection.commit();
 

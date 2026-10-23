@@ -467,6 +467,424 @@ main{
 }
 
 /* This section styles the footer. */
+/* This section styles nav badges and mobile three-dot navigation. */
+.nav-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:18px;
+    height:18px;
+    padding:0 5px;
+    margin-left:6px;
+    border-radius:10px;
+    background:var(--danger);
+    color:var(--white);
+    font-size:11px;
+    font-weight:700;
+}
+
+.mobile-nav-wrapper{
+    display:none;
+    position:relative;
+}
+
+.menu-toggle-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:42px;
+    height:42px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--white);
+    color:var(--dark);
+    position:relative;
+}
+
+.menu-toggle-btn:hover{
+    background:var(--light);
+}
+
+.menu-toggle-badge{
+    position:absolute;
+    top:6px;
+    right:6px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--danger);
+}
+
+.mobile-dropdown{
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
+    min-width:220px;
+    max-width:calc(100vw - 32px);
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:0 12px 36px rgba(24,36,51,0.16);
+    padding:8px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    z-index:100;
+    animation:dropdown-enter 0.2s ease-out;
+}
+
+@keyframes dropdown-enter{
+    from{opacity:0;transform:translateY(-6px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+.mobile-dropdown button{
+    width:100%;
+    text-align:left;
+    padding:10px 14px;
+    border:0;
+    background:transparent;
+    color:var(--slate);
+    border-radius:8px;
+    font-size:14px;
+    font-weight:600;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.mobile-dropdown button:hover{
+    background:var(--success-bg);
+    color:var(--primary);
+    transform:none;
+}
+
+.dropdown-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:18px;
+    height:18px;
+    padding:0 5px;
+    border-radius:10px;
+    background:var(--danger);
+    color:var(--white);
+    font-size:11px;
+}
+
+.menu-divider{
+    height:1px;
+    background:var(--border);
+    margin:4px 0;
+}
+
+.dropdown-logout{
+    color:var(--danger)!important;
+}
+
+.dropdown-logout:hover{
+    background:#fdebea!important;
+}
+
+/* Feature 2: In-app overdue notifications banner */
+.notifications-banner{
+    margin:24px 6% 0;
+    padding:16px 20px;
+    background:#fff8eb;
+    border:1px solid #fed7aa;
+    border-left:5px solid #f97316;
+    border-radius:12px;
+    box-shadow:0 4px 14px rgba(249,115,22,0.08);
+}
+
+.notifications-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:10px;
+}
+
+.notifications-title{
+    font-weight:700;
+    color:#9a3412;
+    font-size:15px;
+}
+
+.mark-all-read-btn{
+    padding:4px 10px;
+    font-size:12px;
+    border:1px solid #fed7aa;
+    background:var(--white);
+    color:#9a3412;
+    border-radius:6px;
+    font-weight:600;
+}
+
+.notifications-list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.notification-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    font-size:13.5px;
+    color:#7c2d12;
+    padding:6px 0;
+    border-bottom:1px dashed #fed7aa;
+}
+
+.notification-item:last-child{
+    border-bottom:none;
+}
+
+.notif-dismiss-btn{
+    background:transparent;
+    border:0;
+    color:#9a3412;
+    padding:2px 6px;
+    font-size:13px;
+    border-radius:4px;
+}
+
+.notif-dismiss-btn:hover{
+    background:#fed7aa;
+    transform:none;
+}
+
+/* Feature 3: Item image styling and clean category placeholders */
+.item-image-container{
+    width:100%;
+    height:165px;
+    border-radius:10px;
+    overflow:hidden;
+    background:#f1f5f9;
+    border:1px solid var(--border);
+    margin-bottom:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+}
+
+.item-thumb-container{
+    height:130px;
+}
+
+.item-card-image{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
+    transition:transform 0.3s ease;
+}
+
+.item-card:hover .item-card-image{
+    transform:scale(1.03);
+}
+
+/* Category-specific gradient backgrounds for placeholders */
+.placeholder-books{
+    background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.placeholder-electronics{
+    background:linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+}
+
+.placeholder-sports{
+    background:linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.placeholder-home{
+    background:linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+}
+
+.placeholder-other{
+    background:linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.item-card-placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    height:100%;
+    user-select:none;
+}
+
+.placeholder-icon-badge{
+    width:54px;
+    height:54px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.9);
+    box-shadow:0 4px 14px rgba(24,36,51,0.1);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:25px;
+    transition:transform 0.2s ease;
+}
+
+.item-card:hover .placeholder-icon-badge{
+    transform:scale(1.1);
+}
+
+/* Feature 3: Laptop image upload dropzone and preview */
+.file-input-hidden{
+    display:none;
+}
+
+.upload-dropzone{
+    border:2px dashed #cbd5e1;
+    border-radius:12px;
+    padding:24px 18px;
+    text-align:center;
+    background:#f8fafc;
+    cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+}
+
+.upload-dropzone:hover{
+    border-color:var(--primary);
+    background:var(--success-bg);
+}
+
+.upload-icon{
+    font-size:32px;
+    display:block;
+    margin-bottom:6px;
+}
+
+.upload-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+}
+
+.image-preview-card{
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    background:var(--white);
+    box-shadow:0 4px 12px rgba(24,36,51,0.06);
+}
+
+.preview-image{
+    width:100%;
+    max-height:260px;
+    object-fit:contain;
+    background:#f1f5f9;
+    display:block;
+}
+
+.preview-actions{
+    display:flex;
+    gap:10px;
+    padding:12px 14px;
+    background:#fafbfc;
+    border-top:1px solid var(--border);
+}
+
+.btn-change-image{
+    flex:1;
+    padding:9px 12px;
+    border:1px solid var(--border);
+    background:var(--white);
+    color:var(--dark);
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+}
+
+.btn-remove-image{
+    flex:1;
+    padding:9px 12px;
+    border:1px solid #fca5a5;
+    background:#fef2f2;
+    color:var(--danger);
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+}
+
+.image-error-text{
+    color:var(--danger);
+    font-size:13px;
+    margin-top:6px;
+    font-weight:600;
+}
+
+/* Feature 2: Return deadline badges and info */
+.return-deadline-info{
+    width:100%;
+    padding:10px 12px;
+    background:#f8fafc;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:13px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.deadline-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    width:fit-content;
+}
+
+.pill-ontime{
+    background:var(--success-bg);
+    color:var(--primary);
+    border:1px solid #b7e4c7;
+}
+
+.pill-overdue{
+    background:#fdebea;
+    color:var(--danger);
+    border:1px solid #fecaca;
+    animation:pulse-overdue 2s infinite ease-in-out;
+}
+
+@keyframes pulse-overdue{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.02);}
+}
+
+.card-status-row{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+/* Feature 1: Rating stars and highlight animation */
+.rating-card{
+    position:relative;
+    transition:background-color 0.5s ease,border-color 0.5s ease,box-shadow 0.5s ease,transform 0.5s ease;
+}
+
+.rating-stars{
+    color:#eab308;
+    font-size:17px;
+    letter-spacing:2px;
+}
+
+/* This section styles the footer. */
 footer{
     padding:22px 5%;
     text-align:center;
@@ -494,34 +912,38 @@ footer{
     .filters button{
         min-height:44px;
     }
-
-    header{
-        justify-content:center;
-    }
 }
 
-/* This section adapts the layout for mobile screens. */
-@media(max-width:650px){
+/* This section adapts the layout for mobile screens and activates the three-dot menu. */
+@media(max-width:768px){
     header{
-        position:static;
-        padding:15px 4%;
-        gap:12px;
+        position:sticky;
+        top:0;
+        z-index:100;
+        padding:12px 5%;
+        justify-content:space-between;
+        flex-wrap:nowrap;
     }
 
     .logo{
-        width:100%;
-        text-align:center;
+        width:auto;
+        text-align:left;
+        font-size:26px;
     }
 
-    .main-nav{
-        width:100%;
-        gap:5px;
+    /* Hide desktop row navigation on mobile */
+    .desktop-nav{
+        display:none!important;
     }
 
-    .main-nav button,
-    .main-nav a{
-        padding:8px;
-        font-size:12px;
+    /* Show three-dot menu button on mobile */
+    .mobile-nav-wrapper{
+        display:block;
+    }
+
+    .notifications-banner{
+        margin:16px 4% 0;
+        padding:12px 14px;
     }
 
     .auth-section{
@@ -584,9 +1006,9 @@ footer{
         gap:13px;
     }
 
-    .item-card div button {
-        margin-right: 10px;
-        margin-bottom: 8px;
+    .item-card div button{
+        margin-right:10px;
+        margin-bottom:8px;
     }
 
     .dashboard-actions{

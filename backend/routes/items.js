@@ -1,10 +1,11 @@
 
-// This section imports Express and the database connection.
+// This section imports Express, the database connection and storage upload utilities.
 const express=require('express');
 const router=express.Router();
 const db=require('../db');
+const {upload,saveUploadedImage}=require('../storage');
 
-// This section returns all shared items with their owner's name.
+// This section returns all shared items with their owner's name and image.
 router.get('/',async(req,res)=>{
     try{
         const {search='',category='',status=''}=req.query;
@@ -17,6 +18,7 @@ router.get('/',async(req,res)=>{
                 i.category,
                 i.description,
                 i.status,
+                i.image_url,
                 u.name AS owner_name
             FROM items i
             JOIN users u ON i.user_id=u.id
@@ -52,8 +54,25 @@ router.get('/',async(req,res)=>{
     }
 });
 
-// This section publishes an item under its owner's account.
-router.post('/',async(req,res)=>{
+// Middleware to handle multer file upload and handle validation errors cleanly.
+function handleUpload(req,res,next){
+    upload.single('image')(req,res,(err)=>{
+        if(err){
+            if(err.code==='LIMIT_FILE_SIZE'){
+                return res.status(400).json({
+                    message:'File is too large. Maximum allowed size is 5 MB.'
+                });
+            }
+            return res.status(400).json({
+                message:err.message||'Image upload failed'
+            });
+        }
+        next();
+    });
+}
+
+// This section publishes an item under its owner's account, optionally with an image.
+router.post('/',handleUpload,async(req,res)=>{
     try{
         const {user_id,name,category,description=''}=req.body;
 
@@ -74,15 +93,22 @@ router.post('/',async(req,res)=>{
             });
         }
 
-        await db.execute(
+        let imageUrl=null;
+        if(req.file){
+            imageUrl=await saveUploadedImage(req.file);
+        }
+
+        const [result]=await db.execute(
             `INSERT INTO items
-            (user_id,name,category,description,status)
-            VALUES (?,?,?,?, 'Available')`,
-            [user_id,name.trim(),category,description]
+            (user_id,name,category,description,status,image_url)
+            VALUES (?,?,?,?, 'Available', ?)`,
+            [user_id,name.trim(),category,description,imageUrl]
         );
 
         res.status(201).json({
-            message:'Item shared successfully!'
+            message:'Item shared successfully!',
+            itemId:result.insertId,
+            image_url:imageUrl
         });
     }catch(err){
         console.error('Add item error:',err.message);

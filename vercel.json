@@ -23,8 +23,18 @@
       "dest": "/backend/server.js"
     },
     {
+      "src": "/uploads/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/check-overdue",
+      "schedule": "0 * * * *"
     }
   ]
 }

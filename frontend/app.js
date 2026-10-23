@@ -14,15 +14,21 @@ const app=Vue.createApp({
             items:[],
             allRequests:[],
             allRatings:[],
+            notifications:[],
             search:'',
             category:'',
             status:'',
             newItem:{name:'',category:'',description:''},
-            ratingForm:{item_id:0,rating:0,comment:''}
+            ratingForm:{item_id:0,rating:0,comment:''},
+            highlightedRatingId:null,
+            selectedImageFile:null,
+            imagePreviewUrl:null,
+            imageError:'',
+            mobileMenuOpen:false
         };
     },
 
-    // This section prepares data for the page views.
+    // This section prepares computed data for the page views.
     computed:{
         filteredItems(){
             return this.items;
@@ -44,7 +50,7 @@ const app=Vue.createApp({
             return this.requests.filter(r=>r.status==='Approved');
         },
 
-        // This section lists only items borrowed by the logged-in user.
+        // This section lists only items borrowed and returned by the logged-in user.
         rateableItems(){
             const uniqueItems=new Map();
 
@@ -57,6 +63,10 @@ const app=Vue.createApp({
                 });
 
             return [...uniqueItems.values()];
+        },
+
+        unreadNotifications(){
+            return this.notifications.filter(n=>!n.is_read);
         }
     },
 
@@ -84,11 +94,13 @@ const app=Vue.createApp({
         goTo(page){
             this.currentPage=page;
             this.message='';
+            this.mobileMenuOpen=false;
 
             if(page==='home') this.loadItems();
 
             if(['requests','borrowed','manage','ratings'].includes(page)){
                 this.loadRequests();
+                this.loadNotifications();
             }
 
             if(page==='ratings') this.loadRatings();
@@ -133,7 +145,11 @@ const app=Vue.createApp({
                 this.auth.password='';
                 this.message='Welcome to Circlo!';
 
-                await Promise.all([this.loadItems(),this.loadRequests()]);
+                await Promise.all([
+                    this.loadItems(),
+                    this.loadRequests(),
+                    this.loadNotifications()
+                ]);
             }catch(err){
                 this.message=err.message;
             }
@@ -147,6 +163,10 @@ const app=Vue.createApp({
             this.items=[];
             this.allRequests=[];
             this.allRatings=[];
+            this.notifications=[];
+            this.highlightedRatingId=null;
+            this.clearSelectedImage();
+            this.mobileMenuOpen=false;
             this.message='';
         },
 
@@ -173,20 +193,79 @@ const app=Vue.createApp({
             }
         },
 
-        // This section publishes a new community item.
+        // This section handles image file selection from user's laptop.
+        handleImageSelect(event){
+            this.imageError='';
+            const file=event.target.files?.[0];
+            if(!file) return;
+
+            const allowedTypes=['image/jpeg','image/jpg','image/png','image/webp'];
+            if(!allowedTypes.includes(file.type.toLowerCase())){
+                this.imageError='Invalid file type. Only JPG, JPEG, PNG, and WebP are allowed.';
+                this.clearSelectedImage();
+                return;
+            }
+
+            const maxSize=5*1024*1024; // 5 MB
+            if(file.size>maxSize){
+                this.imageError='File is too large. Maximum allowed size is 5 MB.';
+                this.clearSelectedImage();
+                return;
+            }
+
+            this.selectedImageFile=file;
+            this.imagePreviewUrl=URL.createObjectURL(file);
+        },
+
+        // This section removes or resets selected image preview.
+        clearSelectedImage(){
+            if(this.imagePreviewUrl&&this.imagePreviewUrl.startsWith('blob:')){
+                URL.revokeObjectURL(this.imagePreviewUrl);
+            }
+            this.selectedImageFile=null;
+            this.imagePreviewUrl=null;
+            if(this.$refs.fileInput){
+                this.$refs.fileInput.value='';
+            }
+        },
+
+        // This section publishes a new community item, optionally with an uploaded image.
         async addItem(){
             try{
-                const data=await this.api('/items',{
-                    method:'POST',
-                    body:JSON.stringify({
-                        user_id:this.user.id,
-                        name:this.newItem.name,
-                        category:this.newItem.category,
-                        description:this.newItem.description
-                    })
-                });
+                this.imageError='';
+
+                let data;
+                if(this.selectedImageFile){
+                    const formData=new FormData();
+                    formData.append('user_id',this.user.id);
+                    formData.append('name',this.newItem.name);
+                    formData.append('category',this.newItem.category);
+                    formData.append('description',this.newItem.description||'');
+                    formData.append('image',this.selectedImageFile);
+
+                    const response=await fetch(API+'/items',{
+                        method:'POST',
+                        body:formData
+                    });
+
+                    data=await response.json().catch(()=>({}));
+                    if(!response.ok){
+                        throw new Error(data.message||'Could not publish item');
+                    }
+                }else{
+                    data=await this.api('/items',{
+                        method:'POST',
+                        body:JSON.stringify({
+                            user_id:this.user.id,
+                            name:this.newItem.name,
+                            category:this.newItem.category,
+                            description:this.newItem.description
+                        })
+                    });
+                }
 
                 this.newItem={name:'',category:'',description:''};
+                this.clearSelectedImage();
                 this.message=data.message||'Item shared successfully!';
                 await this.loadItems();
                 this.currentPage='home';
@@ -207,19 +286,24 @@ const app=Vue.createApp({
                 });
 
                 this.message=data.message||'Borrow request sent!';
-                await Promise.all([this.loadItems(),this.loadRequests()]);
+                await Promise.all([
+                    this.loadItems(),
+                    this.loadRequests(),
+                    this.loadNotifications()
+                ]);
             }catch(err){
                 this.message=err.message;
             }
         },
 
-        // This section loads borrow requests.
+        // This section loads borrow requests and synchronizes overdue notifications.
         async loadRequests(){
             if(!this.user) return;
 
             try{
                 const data=await this.api('/requests');
                 this.allRequests=Array.isArray(data)?data:[];
+                this.loadNotifications();
             }catch(err){
                 this.message=err.message;
             }
@@ -234,7 +318,11 @@ const app=Vue.createApp({
                 });
 
                 this.message=data.message||'Request updated successfully!';
-                await Promise.all([this.loadRequests(),this.loadItems()]);
+                await Promise.all([
+                    this.loadRequests(),
+                    this.loadItems(),
+                    this.loadNotifications()
+                ]);
             }catch(err){
                 this.message=err.message;
             }
@@ -248,7 +336,11 @@ const app=Vue.createApp({
                 });
 
                 this.message=data.message||'Item returned successfully!';
-                await Promise.all([this.loadRequests(),this.loadItems()]);
+                await Promise.all([
+                    this.loadRequests(),
+                    this.loadItems(),
+                    this.loadNotifications()
+                ]);
                 this.currentPage='requests';
             }catch(err){
                 this.message=err.message;
@@ -277,7 +369,7 @@ const app=Vue.createApp({
             this.loadRatings();
         },
 
-        // This section submits a rating for the selected item's owner.
+        // This section submits a rating for the selected item's owner and triggers highlight.
         async submitRating(){
             try{
                 const item=this.rateableItems.find(
@@ -305,9 +397,17 @@ const app=Vue.createApp({
                     })
                 });
 
+                const newRatingId=data.id||data.ratingId;
                 this.message=data.message||'Rating submitted successfully!';
                 this.ratingForm={item_id:0,rating:0,comment:''};
+
                 await this.loadRatings();
+
+                if(newRatingId){
+                    this.highlightedRatingId=Number(newRatingId);
+                }else if(this.allRatings.length>0){
+                    this.highlightedRatingId=Number(this.allRatings[0].id);
+                }
             }catch(err){
                 this.message=err.message;
             }
@@ -323,13 +423,229 @@ const app=Vue.createApp({
             }catch(err){
                 this.message=err.message;
             }
+        },
+
+        // This section loads in-app overdue notifications.
+        async loadNotifications(){
+            if(!this.user) return;
+
+            try{
+                const data=await this.api('/notifications?user_id='+this.user.id);
+                this.notifications=Array.isArray(data)?data:[];
+            }catch(err){
+                console.warn('Could not load notifications:',err.message);
+            }
+        },
+
+        // This section marks an individual notification as read.
+        async markNotificationRead(id){
+            try{
+                await this.api('/notifications/'+id+'/read',{method:'PUT'});
+                const notif=this.notifications.find(n=>n.id===id);
+                if(notif) notif.is_read=1;
+            }catch(err){
+                console.error(err);
+            }
+        },
+
+        // This section marks all notifications as read.
+        async markAllNotificationsRead(){
+            try{
+                await this.api('/notifications/read-all',{
+                    method:'PUT',
+                    body:JSON.stringify({user_id:this.user.id})
+                });
+                this.notifications.forEach(n=>n.is_read=1);
+            }catch(err){
+                console.error(err);
+            }
+        },
+
+        // This section returns an appropriate icon based on item category.
+        getCategoryIcon(category){
+            const cat=(category||'').toLowerCase();
+            if(cat.includes('book')) return '📚';
+            if(cat.includes('electr')) return '💻';
+            if(cat.includes('sport')) return '⚽';
+            if(cat.includes('home')) return '🏡';
+            return '📦';
+        },
+
+        // This section formats date strings clearly.
+        formatDate(dateString){
+            if(!dateString) return 'N/A';
+            const date=new Date(dateString);
+            if(isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString(undefined,{
+                month:'short',
+                day:'numeric',
+                year:'numeric'
+            });
+        },
+
+        formatDateTime(dateString){
+            if(!dateString) return 'N/A';
+            const date=new Date(dateString);
+            if(isNaN(date.getTime())) return dateString;
+            return date.toLocaleString(undefined,{
+                month:'short',
+                day:'numeric',
+                year:'numeric',
+                hour:'numeric',
+                minute:'2-digit'
+            });
+        },
+
+        // This section calculates remaining time or overdue duration for borrowing.
+        getRemainingTime(dueAt){
+            if(!dueAt) return {text:'No deadline set',isOverdue:false};
+            const now=new Date();
+            const due=new Date(dueAt);
+            const diffMs=due-now;
+
+            if(diffMs<0){
+                const overdueMs=Math.abs(diffMs);
+                const days=Math.floor(overdueMs/(1000*60*60*24));
+                const hours=Math.floor((overdueMs%(1000*60*60*24))/(1000*60*60));
+
+                let text='Overdue by ';
+                if(days>0){
+                    text+=`${days} day${days>1?'s':''}`;
+                    if(hours>0) text+=` and ${hours} hr${hours>1?'s':''}`;
+                }else{
+                    text+=`${Math.max(1,hours)} hr${hours>1?'s':''}`;
+                }
+                return {text,isOverdue:true};
+            }else{
+                const days=Math.floor(diffMs/(1000*60*60*24));
+                const hours=Math.floor((diffMs%(1000*60*60*24))/(1000*60*60));
+
+                let text='';
+                if(days>0){
+                    text=`${days} day${days>1?'s':''} left`;
+                }else if(hours>0){
+                    text=`${hours} hour${hours>1?'s':''} left`;
+                }else{
+                    text='Due in less than an hour';
+                }
+                return {text,isOverdue:false};
+            }
+        },
+
+        // Navigation and mobile menu handlers
+        toggleMobileMenu(){
+            this.mobileMenuOpen=!this.mobileMenuOpen;
+        },
+
+        closeMobileMenu(){
+            this.mobileMenuOpen=false;
+        },
+
+        mobileNav(page){
+            this.goTo(page);
+            this.mobileMenuOpen=false;
+        },
+
+        mobileLogout(){
+            this.logout();
+            this.mobileMenuOpen=false;
+        },
+
+        mobileAuth(mode){
+            this.authMode=mode;
+            this.mobileMenuOpen=false;
+            const el=document.getElementById('auth');
+            if(el) el.scrollIntoView({behavior:'smooth'});
+        },
+
+        handleWindowClick(e){
+            if(this.mobileMenuOpen){
+                const wrapper=this.$refs.mobileNavWrapper;
+                if(wrapper&&!wrapper.contains(e.target)){
+                    this.mobileMenuOpen=false;
+                }
+            }
+        },
+
+        handleKeyDown(e){
+            if(e.key==='Escape'&&this.mobileMenuOpen){
+                this.mobileMenuOpen=false;
+            }
         }
     },
 
-    // This section loads existing records when the app opens.
+    // This section loads existing records and initializes listeners when the app opens.
     async mounted(){
+        window.addEventListener('click',this.handleWindowClick);
+        window.addEventListener('keydown',this.handleKeyDown);
+
         if(this.user){
-            await Promise.all([this.loadItems(),this.loadRequests()]);
+            await Promise.all([
+                this.loadItems(),
+                this.loadRequests(),
+                this.loadNotifications()
+            ]);
+        }
+    },
+
+    unmounted(){
+        window.removeEventListener('click',this.handleWindowClick);
+        window.removeEventListener('keydown',this.handleKeyDown);
+        this.clearSelectedImage();
+    }
+});
+
+/**
+ * Feature 1: Custom Vue 3 directive v-rating-highlight.
+ * Visual highlight for newly submitted ratings using lifecycle hooks.
+ */
+function applyRatingHighlightEffect(el){
+    if(!el._origBg) el._origBg=el.style.backgroundColor||'';
+    if(!el._origBorder) el._origBorder=el.style.borderColor||'';
+    if(!el._origShadow) el._origShadow=el.style.boxShadow||'';
+    if(!el._origTransform) el._origTransform=el.style.transform||'';
+
+    el.style.transition='all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+    el.style.backgroundColor='#eaf8ef';
+    el.style.borderColor='#16794b';
+    el.style.boxShadow='0 6px 20px rgba(22, 121, 75, 0.22)';
+    el.style.transform='translateY(-2px)';
+
+    try{
+        el.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }catch(e){}
+
+    if(el._ratingHighlightTimeout){
+        clearTimeout(el._ratingHighlightTimeout);
+    }
+    el._ratingHighlightTimeout=setTimeout(()=>{
+        clearRatingHighlightEffect(el);
+    },5000);
+}
+
+function clearRatingHighlightEffect(el){
+    el.style.backgroundColor=el._origBg||'';
+    el.style.borderColor=el._origBorder||'';
+    el.style.boxShadow=el._origShadow||'';
+    el.style.transform=el._origTransform||'';
+}
+
+app.directive('rating-highlight',{
+    mounted(el,binding){
+        if(binding.value){
+            applyRatingHighlightEffect(el);
+        }
+    },
+    updated(el,binding){
+        if(binding.value&&!binding.oldValue){
+            applyRatingHighlightEffect(el);
+        }else if(!binding.value&&binding.oldValue){
+            clearRatingHighlightEffect(el);
+        }
+    },
+    unmounted(el){
+        if(el._ratingHighlightTimeout){
+            clearTimeout(el._ratingHighlightTimeout);
         }
     }
 });
